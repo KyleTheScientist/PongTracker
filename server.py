@@ -1,3 +1,7 @@
+'''
+This is the main file. Run this to start the server.
+'''
+
 import analytics
 
 from collections import namedtuple
@@ -8,12 +12,17 @@ from team import players, player_names
 from game import games, team_games, ffa_games
 from time import time
 
+SUBMISSION_RATE_LIMIT = 5 # How often people can submit data
+
 # HACK The lambda functions weirdly cross-contaminate unless defined
 # in a separate scope
 def oob_lambda(game):
     return lambda x: game.bounds[0] <= x <= game.bounds[1]
 
 def player_dropdown(label, on_change):
+    '''
+    Renders a dropdown with all the player names.
+    '''
     select = ui.select(
         player_names,
         value=player_names[0],
@@ -24,6 +33,9 @@ def player_dropdown(label, on_change):
     return select
 
 def score_field(label, value, on_change, game):
+    '''
+    Renders a number field with different rules based on the game.
+    '''
     input = ui.number(
         label=label,
         value=value,
@@ -39,6 +51,9 @@ def score_field(label, value, on_change, game):
     return input
 
 def render_ffa(game):
+    '''
+    Renders a player dropdowns next to a "Lives Left" field
+    '''
     with ui.row().classes('w-full'):
         player_dropdown(
             label=f"Winner",
@@ -50,6 +65,9 @@ def render_ffa(game):
         ).classes('w-full')
 
 def render_team(team, game):
+    '''
+    Renders a column of player dropdowns footed by a score field
+    '''
     with ui.column().classes('w-full'):
         for i in range(game.ppt):
             player_dropdown(
@@ -63,12 +81,16 @@ def render_team(team, game):
         ).classes('w-full').metadata = team
 
 def submit():
+    f'''
+    Submits the form data from the Add page into the database.
+    Submissions can only be made every {SUBMISSION_RATE_LIMIT} seconds
+    '''
     if not state.validate():
         ui.notify(f'Please fix all errors before submitting.')
         return
     duration = time() - state.last_submission
-    if duration < 60:
-        ui.notify(f'A submission was made recently. Please wait at least {60 - int(duration)}s')
+    if duration < SUBMISSION_RATE_LIMIT:
+        ui.notify(f'A submission was made recently. Please wait at least {SUBMISSION_RATE_LIMIT - int(duration)}s')
         return
     table = analytics.db.table(state.game.name)
     table.insert(state())
@@ -78,6 +100,9 @@ def submit():
     refresh_charts()
 
 def refresh_charts():
+    '''
+    Refreshes the data in all the charts, tables, and player stat cards.
+    '''
     state.win_chart.options['series'] = analytics.get_win_series()
     state.win_chart.update()
 
@@ -92,6 +117,10 @@ def refresh_charts():
 
 @ui.page('/')
 def main_page():
+    '''
+    Renders the main page. This is the page that everyone is first
+    routed to, and currently the only page.
+    '''
     ui.colors(primary='#2a9d8f', secondary='#e9c46a', accent='#e76f51', info='#264653')
     ui.header()
     with ui.tabs() as tabs:
@@ -100,6 +129,9 @@ def main_page():
         ui.tab('Logs', icon='list')
         ui.tab('Add', icon='note_add')
         # ui.tab('Perfects', icon='star')
+
+    for player in players:
+        player.refresh() # Make sure player stats are up-to-date with the DB
 
     panel_classes = 'gap w-full'
     refresh_btn_classes = 'mt-10 bg-blue-400'
@@ -142,9 +174,8 @@ def main_page():
 
 
 if __name__ in {"__main__", "__mp_main__"}:
-
     state = State()
-    state.last_submission = time() - 60
+    state.last_submission = time() - SUBMISSION_RATE_LIMIT
 
     ui.footer()
     ui.run(port=6969, title="Server", favicon="data/paddle.png")
