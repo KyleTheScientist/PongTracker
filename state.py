@@ -4,6 +4,16 @@ from datetime import datetime
 
 
 class State:
+    '''
+    This class defines the fields and shit associated with the "Add"
+    form.
+
+    Having the fields map to an object instead of just collecting
+    the data from the form fields whenever someone hits submit was a
+    stupid idea and I would burn this class alive if I were more
+    motivated. At the time it was the only way I could think to bind the
+    fields.
+    '''
     def __init__(self):
         self.game = games[0]
         for game in games:

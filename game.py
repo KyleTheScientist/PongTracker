@@ -1,9 +1,12 @@
 class Game():
+    '''
+    Class that defines a game and its playstyle
+    '''
     def __init__(self, name, ppt, ffa, bounds) -> None:
         self.name = name
         self.ppt = ppt
         self.ffa = ffa
-        self.bounds = bounds
+        self.bounds = bounds # Score range
 
     def __str__(self) -> str:
         return self.name

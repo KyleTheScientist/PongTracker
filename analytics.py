@@ -1,58 +1,46 @@
+"""
+This is were all the magic happens, baby. All the
+logic regarding statistics occurs here.
+"""
+
 from game import games, team_games
 from team import players, player_names
-from tinydb import Query, TinyDB
+from tinydb import TinyDB
 from nicegui import ui
 
+# Load a reference to the database
 db = TinyDB('data/database.json')
 
-
 def get_win_series():
+    '''
+    Formats the win rate data so it can be rendered by ui.chart()
+    '''
     series = []
     for game in games:
-        table = db.table(game.name)
         data = []
-        for player in player_names:
-            match = Query()
-            wins = len(table.search(
-                (match.team1.any([player])) | (match.winner == player)
-            ))
-            match = Query()
-            losses = len(table.search(
-                (match.team2.any([player])) | (match.winner != player)
-            ))
-
-            if wins + losses == 0:
+        for player in players:
+            per_game_stats = player.games[game.name]
+            if per_game_stats['matches'] == 0:
                 data.append(0)
             else:
-                data.append(wins / (wins + losses))
+                data.append(per_game_stats['wins'] / per_game_stats['matches'])
         series.append({'name': game.name, 'data': data})
     return series
 
 
 def get_perfect_series():
-    for game in team_games:
-        table = db.table(game.name)
-        data = []
-        perfects = []
-        for player in player_names:
-            match = Query()
-            wins = len(table.search(
-                (match.team1.all([player])) | (match.team2.score == 0)
-            ))
-            data.append(wins)
-        perfects.append(data)
-
-    # summing perfects across all team games
-    totals = []
-    for i in range(len(data)):
-        sum = 0
-        for p in perfects:
-            sum += p[i]
-        totals.append(sum)
-
-    return [{"showInLegend": False, 'data': totals}]
+    '''
+    Formats the perfect game data so it can be rendered by ui.chart()
+    '''
+    data = []
+    for player in players:
+        data.append(player.perfects)
+    return [{"showInLegend": False, 'data': data}]
 
 def win_rate():
+    '''
+    Renders the win rate chart
+    '''
     return ui.chart(
         {
             'title': {'text': 'Win Rates'},
@@ -71,6 +59,9 @@ def win_rate():
 
 
 def perfects():
+    '''
+    Renders the perfect game chart
+    '''
     return ui.chart(
         {
             'title': {'text': 'Perfects'},
@@ -82,16 +73,20 @@ def perfects():
     ).classes('w-full h-full')
 
 
+# HACK The lambda functions weirdly cross-contaminate unless defined
+# in a separate scope
 def game_lambda(game):
     return lambda g: g == game.name
-
 
 def player_lambda(player):
     return lambda p: p == player
 
-
 ignored_fields = ['game', 'ffa']
 def logs():
+    '''
+    Renders the match history for each game into a table and renders
+    the game dropdown that toggles them.
+    '''
     grids = []
     # Render game dropdown
     game_select = ui.select(
@@ -115,12 +110,18 @@ def logs():
             }))
     return grids
 
+# Some style definitions
 card_classes = 'w-full gap-1 place-content-center bg-primary border-white border-4 rounded-lg'
 icon_classes = 'text-2xl text-white fg-white padding p-1'
 label_classes = 'text-2xl font-bold text-white'
 value_classes = 'text-2xl font-semibold	w-full bg-accent padding p-1 text-center text-white border-white border-4 rounded-lg'
 
 def stat_card(icon, label, player, stat):
+    '''
+    Renders an individual statistic card and binds it's value to the
+    associated player object so that we don't need to update the label
+    manually whenever a new game is submitted.
+    '''
     values = {}
     with ui.card().classes(card_classes):
         ui.icon(icon).classes(icon_classes)
@@ -131,6 +132,10 @@ def stat_card(icon, label, player, stat):
 
 
 def stats():
+    '''
+    Renders the stats page, including a player dropdown menu that
+    toggles the stat cards for each player.
+    '''
     with ui.column().classes('w-full gap-5'):
         # Render player dropdown
         player_select = ui.select(
@@ -138,12 +143,7 @@ def stats():
             label='Player',
         ).classes('w-full items-center text-xl')
 
-        # Render table
         for player in players:
-            player.refresh()
-            matches = player.games
-            best_position = 'Server' if player.server_wins > player.receiver_wins else "Receiver"
-            best_position = 'Either' if player.server_wins == player.receiver_wins else best_position
             with ui.column().bind_visibility_from(player_select, 'value', backward=player_lambda(player.name)).classes('w-full'):
                 # Wins/Losses
                 with ui.row().classes('w-full'):
@@ -151,7 +151,7 @@ def stats():
                     stat_card('arrow_downward', 'Losses', player, 'losses')
                 # Games/Win Rate
                 with ui.row().classes('w-full'):
-                    stat_card('tag', 'Games', player, 'games')
+                    stat_card('tag', 'Games', player, 'matches')
                     stat_card('timelapse', 'Win Rate', player, 'win_rate')
                 # Best Position
                 with ui.row().classes('w-full'):
