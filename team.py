@@ -68,7 +68,7 @@ class Player():
         '''
         Because the bind_text_from() method only accepts attributes
         (not functions) I am overriding the getattr method to provide
-        some of the more complex stats that are either computer from
+        some of the more complex stats that are either computed from
         other fields or have text.
         '''
         if name == 'win_rate':
