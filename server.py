@@ -103,8 +103,10 @@ def refresh_charts():
     '''
     Refreshes the data in all the charts, tables, and player stat cards.
     '''
-    state.win_chart.options['series'] = analytics.get_win_series()
-    state.win_chart.update()
+
+    for chart, update_method in state.charts:
+        chart.options['series'] = update_method()
+        chart.update()
 
     # state.perfect_chart.options['series'] = analytics.get_perfect_series()
     # state.perfect_chart.update()
@@ -138,7 +140,7 @@ def main_page():
     with ui.tab_panels(tabs, value='Graphs').classes('w-full'):
         with ui.tab_panel('Graphs'):
             with ui.card():
-                state.win_chart = analytics.win_rate()
+                state.charts = analytics.render_charts()
                 ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Players'):
             state.logs = analytics.stats()

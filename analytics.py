@@ -11,7 +11,7 @@ from nicegui import ui
 # Load a reference to the database
 db = TinyDB('data/database.json')
 
-def get_win_series():
+def get_win_rate_series():
     '''
     Formats the win rate data so it can be rendered by ui.chart()
     '''
@@ -23,10 +23,23 @@ def get_win_series():
             if per_game_stats['matches'] == 0:
                 data.append(0)
             else:
-                data.append(per_game_stats['wins'] / per_game_stats['matches'])
+                data.append((per_game_stats['wins'] / per_game_stats['matches']) * 100)
         series.append({'name': game.name, 'data': data})
     return series
 
+def get_win_loss_series():
+    '''
+    Formats the win/loss data so it can be rendered by ui.chart()
+    '''
+    series = []
+    wins = []
+    losses = []
+    for player in players:
+        wins.append(player.wins)
+        losses.append(player.losses)
+    series.append({'name': 'wins', 'data': wins})
+    series.append({'name': 'losses', 'data': losses})
+    return series
 
 def get_perfect_series():
     '''
@@ -37,11 +50,19 @@ def get_perfect_series():
         data.append(player.perfects)
     return [{"showInLegend": False, 'data': data}]
 
-def win_rate():
+def render_charts():
     '''
-    Renders the win rate chart
+    Renders the charts (win rate/win losses) and a dropdown to switch between them.
+    Returns a list of `ui.chart`'s and their associated update methods as tuples.
     '''
-    return ui.chart(
+    charts = []
+    chart_select = ui.select(
+        ['Win Rate', 'Wins/Losses'],
+        label='Graph',
+    ).classes('w-full items-center text-xl')
+    # Win rates per game
+    with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Win Rate')).classes('w-full'):
+        win_rates = ui.chart(
         {
             'title': {'text': 'Win Rates'},
             'chart': {'type': 'bar', 'height': '1000px'},
@@ -53,10 +74,28 @@ def win_rate():
             },
             'xAxis': {'categories': player_names},
             'yAxis': {'title': False, 'allowDecimals': True},
-            'series': get_win_series(),
+            'series': get_win_rate_series(),
         }
     ).classes('w-full h-full')
 
+    # Overall wins/losses
+    with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Wins/Losses')).classes('w-full'):
+        win_loss = ui.chart(
+        {
+            'title': {'text': 'Overall Wins/Losses'},
+            'chart': {'type': 'bar', 'height': '660px'},
+            'plotOptions': {
+                'series': {
+                    'pointWidth': 10,
+                    'centerInCategory': True
+                },
+            },
+            'xAxis': {'categories': player_names},
+            'yAxis': {'title': False, 'allowDecimals': False},
+            'series': get_win_loss_series(),
+        }
+    ).classes('w-full h-full')
+    return (win_rates, get_win_rate_series), (win_loss, get_win_loss_series)
 
 def perfects():
     '''
@@ -80,6 +119,10 @@ def game_lambda(game):
 
 def player_lambda(player):
     return lambda p: p == player
+
+def chart_lambda(chart):
+    return lambda c: c == chart
+
 
 ignored_fields = ['game', 'ffa']
 def logs():
