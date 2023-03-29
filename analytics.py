@@ -196,6 +196,9 @@ def stats():
                 with ui.row().classes('w-full'):
                     stat_card('tag', 'Games', player, 'matches')
                     stat_card('timelapse', 'Win Rate', player, 'win_rate')
+                # Points per game
+                with ui.row().classes('w-full'):
+                    stat_card('calculate', 'Points Per Game', player, 'ppg')
                 # Best Position
                 with ui.row().classes('w-full'):
                     stat_card('group', 'Best Position', player, 'best_position')

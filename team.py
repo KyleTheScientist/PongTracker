@@ -57,6 +57,10 @@ class Player():
         self.wins = 0
         self.losses = 0
         self.matches = 0
+        self.lifetime_points = 0
+        self.lifetime_difference = 0
+        self.ppg = 0
+        self.dpg = 0
         self.perfects = 0
         self.server_wins = 0
         self.receiver_wins = 0
@@ -122,6 +126,8 @@ class Player():
                 # Player Won
                 if self.name in match['team1']:
                     self.wins += 1
+                    self.lifetime_points += match['score1']
+                    self.lifetime_difference += match['score1'] - match['score2']
                     self.games[game.name]['wins'] += 1
                     # Which position did they win in?
                     if len(match['team1']) == 2:
@@ -144,6 +150,8 @@ class Player():
                 # Player lost
                 if self.name in match['team2']:
                     self.losses += 1
+                    self.lifetime_points += match['score2']
+                    self.lifetime_difference += match['score2'] - match['score1']
                     self.games[game.name]['losses'] += 1
                     # Mark who they lost with/against
                     for teammate in match['team2']:
@@ -161,6 +169,9 @@ class Player():
         self.worst_mate = list(self.wins_with.keys())[0]
         self.nemesis = list(self.wins_against.keys())[0]
         self.antinemesis = list(self.wins_against.keys())[-1]
+        if self.matches > 0:
+            self.ppg = int(self.lifetime_points / self.matches * 100) / 100
+            self.dpg = int(self.lifetime_difference / self.matches * 100) / 100
 
 
 # Define players
