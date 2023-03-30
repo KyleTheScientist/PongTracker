@@ -1,6 +1,7 @@
 from game import games
 import analytics
 from tinydb import Query
+from utils import ratio_safe
 
 # The list of players.
 # TODO import these from a file or something
@@ -59,13 +60,18 @@ class Player():
         self.matches = 0
         self.lifetime_points = 0
         self.lifetime_difference = 0
-        self.ppg = 0
-        self.dpg = 0
+        self.points_per_game = 0
+        self.difference_per_game = 0
         self.perfects = 0
         self.server_wins = 0
         self.receiver_wins = 0
         self.wins_with = {p: 0 for p in player_names if p != self.name}
+        self.losses_with = {p: 0 for p in player_names if p != self.name}
         self.wins_against = {p: 0 for p in player_names if p != self.name}
+        self.losses_against = {p: 0 for p in player_names if p != self.name}
+        self.teammate_ranking = {p: 0 for p in player_names if p != self.name}
+        self.opponent_ranking = {p: 0 for p in player_names if p != self.name}
+
         self.games = {game.name: {'wins': 0, 'losses': 0, 'matches': 0} for game in games}
 
     def __getattribute__(self, name: str):
@@ -83,29 +89,29 @@ class Player():
         if name == 'best_position':
             if self.server_wins + self.receiver_wins == 0:
                 return None
-            best_position = 'Server' if self.server_wins > self.receiver_wins else "Receiver"
+            best_position = 'Right' if self.server_wins > self.receiver_wins else "Left"
             best_position = 'Either' if self.server_wins == self.receiver_wins else best_position
             return best_position
 
         if name == 'best_mate_str':
-            if self.matches == 0 or set(self.wins_with.values()) == {0}:
+            if self.matches == 0:
                 return None
-            return f'{self.best_mate} ({self.wins_with[self.best_mate]})'
+            return f'{self.best_mate} ({self.wins_with[self.best_mate]}:{self.losses_with[self.best_mate]})'
 
         if name == 'worst_mate_str':
-            if self.matches == 0 or set(self.wins_with.values()) == {0}:
+            if self.matches == 0:
                 return None
-            return f'{self.worst_mate} ({self.wins_with[self.worst_mate]})'
+            return f'{self.worst_mate} ({self.wins_with[self.worst_mate]}:{self.losses_with[self.worst_mate]})'
 
         if name == 'nemesis_str':
-            if self.matches == 0 or set(self.wins_against.values()) == {0}:
+            if self.matches == 0:
                 return None
-            return f'{self.nemesis} ({self.wins_against[self.nemesis]})'
+            return f'{self.nemesis} ({self.wins_against[self.nemesis]}:{self.losses_against[self.nemesis]})'
 
         if name == 'antinemesis_str':
-            if self.matches == 0 or set(self.wins_against.values()) == {0}:
+            if self.matches == 0:
                 return None
-            return f'{self.antinemesis} ({self.wins_against[self.antinemesis]})'
+            return f'{self.antinemesis} ({self.wins_against[self.antinemesis]}:{self.losses_against[self.antinemesis]})'
 
         return super(Player, self).__getattribute__(name)
 
@@ -156,22 +162,30 @@ class Player():
                     # Mark who they lost with/against
                     for teammate in match['team2']:
                         if teammate != self.name:
-                            self.wins_with[teammate] -= 1
+                            self.losses_with[teammate] += 1
                     for opponent in match['team1']:
-                        self.wins_against[opponent] -= 1
+                        self.losses_against[opponent] += 1
 
             self.games[game.name]['matches'] = \
                 self.games[game.name]['wins'] + self.games[game.name]['losses']
+
+        for player in players:
+            if player == self: continue
+            self.teammate_ranking[player.name] = self.wins_with[player.name] - self.losses_with[player.name]
+
         self.wins_with = sorted_by_value(self.wins_with)
         self.wins_against = sorted_by_value(self.wins_against)
-
-        self.best_mate = list(self.wins_with.keys())[-1]
-        self.worst_mate = list(self.wins_with.keys())[0]
-        self.nemesis = list(self.wins_against.keys())[0]
-        self.antinemesis = list(self.wins_against.keys())[-1]
+        self.losses_with = sorted_by_value(self.losses_with)
+        self.losses_against = sorted_by_value(self.losses_against)
+        self.teammate_ranking = sorted_by_value(self.teammate_ranking)
+        self.opponent_ranking = sorted_by_value(self.opponent_ranking)
+        self.best_mate = list(self.teammate_ranking.keys())[-1]
+        self.worst_mate = list(self.teammate_ranking.keys())[0]
+        self.nemesis = list(self.opponent_ranking.keys())[0]
+        self.antinemesis = list(self.opponent_ranking.keys())[-1]
         if self.matches > 0:
-            self.ppg = int(self.lifetime_points / self.matches * 100) / 100
-            self.dpg = int(self.lifetime_difference / self.matches * 100) / 100
+            self.points_per_game = int(self.lifetime_points / self.matches * 100) / 100
+            self.difference_per_game = int(self.lifetime_difference / self.matches * 100) / 100
 
 
 # Define players

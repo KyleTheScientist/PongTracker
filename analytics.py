@@ -27,19 +27,29 @@ def get_win_rate_series():
         series.append({'name': game.name, 'data': data})
     return series
 
+
+class StatSeriesGenerator():
+    def __getattribute__(self, name):
+        data = []
+        for player in players:
+             data.append([player.name, getattr(player, name)])
+        return {'name': name.replace('_', ' ').capitalize(), 'data': data}
+
 def get_win_loss_series():
     '''
     Formats the win/loss data so it can be rendered by ui.chart()
     '''
-    series = []
-    wins = []
-    losses = []
-    for player in players:
-        wins.append(player.wins)
-        losses.append(player.losses)
-    series.append({'name': 'wins', 'data': wins})
-    series.append({'name': 'losses', 'data': losses})
-    return series
+    generator = StatSeriesGenerator()
+    return [generator.wins, generator.losses]
+
+def get_ppg_series():
+    '''
+    Formats the win/loss data so it can be rendered by ui.chart()
+    '''
+    generator = StatSeriesGenerator()
+    series = generator.points_per_game
+    series.update(dataSorting={'enabled': True})
+    return [series]
 
 def get_perfect_series():
     '''
@@ -57,7 +67,7 @@ def render_charts():
     '''
     charts = []
     chart_select = ui.select(
-        ['Win Rate', 'Wins/Losses'],
+        ['Win Rate', 'Wins/Losses', 'Points Per Game'],
         label='Graph',
     ).classes('w-full items-center text-xl')
     # Win rates per game
@@ -87,7 +97,7 @@ def render_charts():
             'plotOptions': {
                 'series': {
                     'pointWidth': 10,
-                    'centerInCategory': True
+                    'centerInCategory': True,
                 },
             },
             'xAxis': {'categories': player_names},
@@ -95,7 +105,28 @@ def render_charts():
             'series': get_win_loss_series(),
         }
     ).classes('w-full h-full')
-    return (win_rates, get_win_rate_series), (win_loss, get_win_loss_series)
+
+    with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Points Per Game')).classes('w-full'):
+        ppg = ui.chart(
+        {
+            'title': {'text': 'Points Per Game'},
+            'chart': {'type': 'bar', 'height': '660px'},
+            'plotOptions': {
+                'series': {
+                    'pointWidth': 10,
+                    'centerInCategory': True,
+                },
+            },
+            'xAxis': {'type': 'category'},
+            'yAxis': {'title': False, 'allowDecimals': True},
+            'series': get_ppg_series(),
+        }
+    ).classes('w-full h-full')
+    return [
+        (win_rates, get_win_rate_series),
+        (win_loss, get_win_loss_series),
+        (ppg, get_ppg_series)
+    ]
 
 def perfects():
     '''
@@ -198,8 +229,8 @@ def stats():
                     stat_card('timelapse', 'Win Rate', player, 'win_rate')
                 # Points per game
                 with ui.row().classes('w-full'):
-                    stat_card('calculate', 'Points Per Game', player, 'ppg')
-                    stat_card('calculate', 'Point Diff. Per Game', player, 'dpg')
+                    stat_card('calculate', 'Points Per Game', player, 'points_per_game')
+                    stat_card('calculate', 'Point Diff. Per Game', player, 'difference_per_game')
                 # Best Position
                 with ui.row().classes('w-full'):
                     stat_card('group', 'Best Position', player, 'best_position')
