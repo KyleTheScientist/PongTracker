@@ -229,8 +229,8 @@ def stats():
                     stat_card('timelapse', 'Win Rate', player, 'win_rate')
                 # Points per game
                 with ui.row().classes('w-full'):
-                    stat_card('calculate', 'Points Per Game', player, 'points_per_game')
-                    stat_card('calculate', 'Point Diff. Per Game', player, 'difference_per_game')
+                    stat_card('calculate', 'Points Per Game (1s/2s/3s)', player, 'points_per_game')
+                    stat_card('calculate', 'Point Diff. Per Game (1s/2s/3s)', player, 'difference_per_game')
                 # Best Position
                 with ui.row().classes('w-full'):
                     stat_card('group', 'Best Position', player, 'best_position')

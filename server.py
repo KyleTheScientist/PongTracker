@@ -112,6 +112,9 @@ def refresh_charts():
     # state.perfect_chart.update()
     for player in players:
         player.refresh()
+        if player.name == 'Grayson':
+            print(player.matches_per_side)
+
 
     for i, log in enumerate(state.logs):
         log.options['rowData'] = analytics.db.table(games[i].name).all()

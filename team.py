@@ -58,13 +58,10 @@ class Player():
         self.wins = 0
         self.losses = 0
         self.matches = 0
-        self.lifetime_points = 0
-        self.lifetime_difference = 0
-        self.points_per_game = 0
-        self.difference_per_game = 0
         self.perfects = 0
         self.server_wins = 0
         self.receiver_wins = 0
+        self.matches_per_side = [{'wins': 0, 'losses': 0, 'matches': 0}, {'wins': 0, 'losses': 0, 'matches': 0}]
         self.wins_with = {p: 0 for p in player_names if p != self.name}
         self.losses_with = {p: 0 for p in player_names if p != self.name}
         self.wins_against = {p: 0 for p in player_names if p != self.name}
@@ -72,7 +69,13 @@ class Player():
         self.teammate_ranking = {p: 0 for p in player_names if p != self.name}
         self.opponent_ranking = {p: 0 for p in player_names if p != self.name}
 
-        self.games = {game.name: {'wins': 0, 'losses': 0, 'matches': 0} for game in games}
+        self.games = {game.name: {'wins': 0, 'losses': 0, 'matches': 0, 'points': 0, 'point_difference': 0} for game in games}
+
+    def avg_points_ing(self, game):
+        return ratio_safe(self.games[game]['points'], self.games[game]['matches'])
+
+    def avg_point_difference_in(self, game):
+        return ratio_safe(self.games[game]['point_difference'], self.games[game]['matches'])
 
     def __getattribute__(self, name: str):
         '''
@@ -87,31 +90,49 @@ class Player():
             return f'{int(self.wins/self.matches * 100)}%'
 
         if name == 'best_position':
-            if self.server_wins + self.receiver_wins == 0:
+            r = self.matches_per_side[1]
+            l = self.matches_per_side[0]
+
+            if self.games['Doubles']['matches'] == 0:
                 return None
-            best_position = 'Right' if self.server_wins > self.receiver_wins else "Left"
-            best_position = 'Either' if self.server_wins == self.receiver_wins else best_position
-            return best_position
+
+            r_win_rate = int(ratio_safe(r['wins'], r['matches']) * 100)
+            l_win_rate = int(ratio_safe(l['wins'], l['matches']) * 100)
+            best_position = 'Right ({left}% : {right}%)' if r_win_rate > l_win_rate else "Left ({left}% : {right}%)"
+            best_position = 'Either' if r_win_rate == l_win_rate else best_position
+            return best_position.format(left=l_win_rate, right=r_win_rate)
+
+        if name == 'points_per_game':
+            singles = self.avg_points_ing('Singles')
+            doubles = self.avg_points_ing('Doubles')
+            triples = self.avg_points_ing('Triples')
+            return f'{singles:.2f}/{doubles:.2f}/{triples:.2f}'
+
+        if name == 'difference_per_game':
+            singles = self.avg_point_difference_in('Singles')
+            doubles = self.avg_point_difference_in('Doubles')
+            triples = self.avg_point_difference_in('Triples')
+            return f'{singles:.2f}/{doubles:.2f}/{triples:.2f}'
 
         if name == 'best_mate_str':
-            if self.matches == 0:
+            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.best_mate} ({self.wins_with[self.best_mate]}:{self.losses_with[self.best_mate]})'
+            return f'{self.best_mate} ({self.wins_with[self.best_mate]} : {self.losses_with[self.best_mate]})'
 
         if name == 'worst_mate_str':
-            if self.matches == 0:
+            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.worst_mate} ({self.wins_with[self.worst_mate]}:{self.losses_with[self.worst_mate]})'
+            return f'{self.worst_mate} ({self.wins_with[self.worst_mate]} : {self.losses_with[self.worst_mate]})'
 
         if name == 'nemesis_str':
-            if self.matches == 0:
+            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.nemesis} ({self.wins_against[self.nemesis]}:{self.losses_against[self.nemesis]})'
+            return f'{self.nemesis} ({self.wins_against[self.nemesis]} : {self.losses_against[self.nemesis]})'
 
         if name == 'antinemesis_str':
-            if self.matches == 0:
+            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.antinemesis} ({self.wins_against[self.antinemesis]}:{self.losses_against[self.antinemesis]})'
+            return f'{self.antinemesis} ({self.wins_against[self.antinemesis]} : {self.losses_against[self.antinemesis]})'
 
         return super(Player, self).__getattribute__(name)
 
@@ -131,16 +152,8 @@ class Player():
             for match in all_matches:
                 # Player Won
                 if self.name in match['team1']:
+                    team = 'team1'
                     self.wins += 1
-                    self.lifetime_points += match['score1']
-                    self.lifetime_difference += match['score1'] - match['score2']
-                    self.games[game.name]['wins'] += 1
-                    # Which position did they win in?
-                    if len(match['team1']) == 2:
-                        if match['team1'][0] == self.name:
-                            self.server_wins += 1
-                        else:
-                            self.receiver_wins += 1
 
                     # Did they get a free lunch?
                     if match['score2'] == 0:
@@ -155,16 +168,30 @@ class Player():
 
                 # Player lost
                 if self.name in match['team2']:
+                    team = 'team2'
                     self.losses += 1
-                    self.lifetime_points += match['score2']
-                    self.lifetime_difference += match['score2'] - match['score1']
-                    self.games[game.name]['losses'] += 1
+
                     # Mark who they lost with/against
                     for teammate in match['team2']:
                         if teammate != self.name:
                             self.losses_with[teammate] += 1
                     for opponent in match['team1']:
                         self.losses_against[opponent] += 1
+
+                # Preparing some strings
+                category = 'wins' if team == 'team1' else 'losses'
+                score = 'score1' if team == 'team1' else 'score2'
+                opp_score = 'score2' if team == 'team1' else 'score1'
+
+                # Update per-game stats
+                self.games[game.name][category] += 1
+                self.games[game.name]['points'] += match[score]
+                self.games[game.name]['point_difference'] += match[score] - match[opp_score]
+
+                # Which position did they lose in?
+                if match['game'] == 'Doubles':
+                    self.matches_per_side[int(match['team2'][1] == self.name)]['matches'] += 1
+                    self.matches_per_side[int(match['team2'][1] == self.name)][category] += 1
 
             self.games[game.name]['matches'] = \
                 self.games[game.name]['wins'] + self.games[game.name]['losses']
@@ -183,9 +210,6 @@ class Player():
         self.worst_mate = list(self.teammate_ranking.keys())[0]
         self.nemesis = list(self.opponent_ranking.keys())[0]
         self.antinemesis = list(self.opponent_ranking.keys())[-1]
-        if self.matches > 0:
-            self.points_per_game = int(self.lifetime_points / self.matches * 100) / 100
-            self.difference_per_game = int(self.lifetime_difference / self.matches * 100) / 100
 
 
 # Define players
