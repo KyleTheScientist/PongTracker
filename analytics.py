@@ -237,6 +237,7 @@ def stats():
                 # Points per game
                 with ui.row().classes('w-full'):
                     stat_card('calculate', 'Points Per Game (1s/2s/3s)', player, 'points_per_game')
+                with ui.row().classes('w-full'):
                     stat_card('calculate', 'Point Diff. Per Game (1s/2s/3s)', player, 'difference_per_game')
                 # Best Position
                 with ui.row().classes('w-full'):

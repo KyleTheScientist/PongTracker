@@ -92,6 +92,8 @@ class Player():
         if name == 'best_position':
             r = self.matches_per_side[1]
             l = self.matches_per_side[0]
+            if self.name == 'Kyle':
+                print(self.matches_per_side)
 
             if self.games['Doubles']['matches'] == 0:
                 return None
@@ -179,8 +181,8 @@ class Player():
                         self.losses_against[opponent] += 1
 
                 # Preparing some strings
-                category = 'wins' if team == 'team1' else 'losses'
-                score = 'score1' if team == 'team1' else 'score2'
+                category =  'wins'   if team == 'team1' else 'losses'
+                score =     'score1' if team == 'team1' else 'score2'
                 opp_score = 'score2' if team == 'team1' else 'score1'
 
                 # Update per-game stats
@@ -190,8 +192,8 @@ class Player():
 
                 # Which position did they lose in?
                 if match['game'] == 'Doubles':
-                    self.matches_per_side[int(match['team2'][1] == self.name)]['matches'] += 1
-                    self.matches_per_side[int(match['team2'][1] == self.name)][category] += 1
+                    self.matches_per_side[int(match[team][1] == self.name)]['matches'] += 1
+                    self.matches_per_side[int(match[team][1] == self.name)][category] += 1
 
             self.games[game.name]['matches'] = \
                 self.games[game.name]['wins'] + self.games[game.name]['losses']
