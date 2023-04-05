@@ -7,7 +7,7 @@ import analytics
 from collections import namedtuple
 from nicegui import ui
 
-from team import players, player_names
+from player import players, player_names
 from game import games, team_games, ffa_games
 from time import time
 from form import Form
@@ -23,8 +23,6 @@ def refresh_charts():
 
     for player in players:
         player.refresh()
-        if player.name == 'Grayson':
-            print(player.matches_per_side)
 
     for i, log in enumerate(page.logs):
         log.options['rowData'] = analytics.db.table(games[i].name).all()
@@ -56,14 +54,18 @@ def main_page():
                 page.charts = analytics.render_charts()
                 ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Players'):
-            page.logs = analytics.stats()
-            ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
+            with ui.card():
+                page.logs = analytics.stats()
+                ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Logs'):
-            page.logs = analytics.logs()
-            ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
+            with ui.card():
+                page.logs = analytics.logs()
+                ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Add'):
-            with ui.column().classes(panel_classes):
-                Form().render()
+            with ui.card():
+                with ui.column().classes(panel_classes):
+                    Form().render()
+
 
 if __name__ in {"__main__", "__mp_main__"}:
     class Page(): pass

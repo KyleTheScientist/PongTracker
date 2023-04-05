@@ -4,9 +4,10 @@ logic regarding statistics occurs here.
 """
 
 from game import games, team_games
-from team import players, player_names
+from player import players, player_names
 from tinydb import TinyDB
 from nicegui import ui
+from utils import ratio_safe
 
 # Load a reference to the database
 db = TinyDB('data/database.json')
@@ -46,10 +47,14 @@ def get_ppg_series():
     '''
     Formats the win/loss data so it can be rendered by ui.chart()
     '''
-    generator = StatSeriesGenerator()
-    series = generator.points_per_game
-    series.update(dataSorting={'enabled': True})
-    return [series]
+    series = []
+    for game in team_games:
+        data = []
+        for player in players:
+            per_game_stats = player.games[game.name]
+            data.append(ratio_safe(per_game_stats['points'], per_game_stats['matches']))
+        series.append({'name': game.name, 'data': data})
+    return series
 
 def get_perfect_series():
     '''
@@ -110,14 +115,15 @@ def render_charts():
         ppg = ui.chart(
         {
             'title': {'text': 'Points Per Game'},
-            'chart': {'type': 'bar', 'height': '660px'},
+            'chart': {'type': 'bar', 'height': '800px'},
             'plotOptions': {
                 'series': {
-                    'pointWidth': 10,
+                    'pointWidth': 8,
+                    'pointPadding': .25,
                     'centerInCategory': True,
                 },
             },
-            'xAxis': {'type': 'category'},
+            'xAxis': {'categories': player_names},
             'yAxis': {'title': False, 'allowDecimals': True},
             'series': get_ppg_series(),
         }
@@ -172,16 +178,17 @@ def logs():
     # Render table
     for game in games:
         table = db.table(game.name).all()
-        with ui.column().bind_visibility_from(game_select, 'value', backward=game_lambda(game)):
+        with ui.column().bind_visibility_from(game_select, 'value', backward=game_lambda(game)).classes('w-full'):
             if len(table) <= 0:
                 ui.label('No data').classes('text-4xl w-full text-center').style('padding: 100px')
                 continue
-            columnDefs = [{'headerName': key.upper(), 'field': key} for key in table[0].keys() if key not in ignored_fields]
+            columnDefs = [{'headerName': key.upper(), 'field': key, 'sortable': True} for key in table[0].keys() if key not in ignored_fields]
             grids.append(ui.aggrid({
                 'columnDefs': columnDefs,
                 'rowData': table,
                 'rowSelection': 'multiple',
-            }))
+                'width': '100%'
+            }, theme='alpine').classes('w-full'))
     return grids
 
 # Some style definitions

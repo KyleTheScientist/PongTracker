@@ -1,6 +1,6 @@
 from nicegui import ui
 from game import games, team_games, ffa_games, Game, get_game
-from team import player_names
+from player import player_names
 from time import time
 from analytics import db
 from datetime import datetime
@@ -73,6 +73,8 @@ class TeamForm:
     def errors(self):
         if None in [dropdown.value for dropdown in self.player_dropdowns]:
             return "All players must be specified"
+        if len(set(self.players())) != self.game.ppt:
+            return "A player can only be added to a team once"
         if 0 > self.score() > 99:
             return "Score must be within range 0<x<100"
         return None
