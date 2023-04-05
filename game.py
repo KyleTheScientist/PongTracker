@@ -12,9 +12,9 @@ class Game():
         return self.name
 
 games = [
-    Game('Singles', 1, False, (0, 100)),
-    Game('Doubles', 2, False, (0, 100)),
-    Game('Triples', 3, False, (0, 100)),
+    Game('Singles', 1, False, (0, 99)),
+    Game('Doubles', 2, False, (0, 99)),
+    Game('Triples', 3, False, (0, 99)),
     Game('Ping Around The Rosie', 1, True, (1, 3)),
 ]
 
