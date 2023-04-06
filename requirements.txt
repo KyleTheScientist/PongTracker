@@ -1,2 +1,2 @@
-nicegui
-tinydb
+nicegui==1.2.0
+tinydb==4.7.1

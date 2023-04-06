@@ -92,8 +92,6 @@ class Player():
         if name == 'best_position':
             r = self.matches_per_side[1]
             l = self.matches_per_side[0]
-            if self.name == 'Kyle':
-                print(self.matches_per_side)
 
             if self.games['Doubles']['matches'] == 0:
                 return None
