@@ -8,9 +8,11 @@ from player import players, player_names
 from tinydb import TinyDB
 from nicegui import ui
 from utils import ratio_safe
+import os
 
 # Load a reference to the database
-db = TinyDB('data/database.json')
+
+db = TinyDB(f'{os.path.dirname(os.path.abspath(__file__))}/data/database.json')
 
 def get_win_rate_series():
     '''
