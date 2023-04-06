@@ -70,4 +70,4 @@ def main_page():
 if __name__ in {"__main__", "__mp_main__"}:
     class Page(): pass
     page = Page()
-    ui.run(port=80, title="Server", favicon="data/paddle.png")
+    ui.run(port=80, title="TopSpin", favicon="data/paddle.png")
