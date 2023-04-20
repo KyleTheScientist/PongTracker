@@ -4,6 +4,7 @@ from player import player_names
 from time import time
 from analytics import db
 from datetime import datetime
+from server import refresh_charts
 
 def get_lambda(y):
     return lambda x: x == y
@@ -188,7 +189,7 @@ class Form:
         self.last_submission = time()
         ui.notify('Submitted.')
         print(f'Submit {state}')
-        # server.refresh_charts()
+        refresh_charts()
 
     def on_game_changed(self):
         pass
