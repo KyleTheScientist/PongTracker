@@ -64,10 +64,11 @@ def main_page():
         with ui.tab_panel('Add'):
             with ui.card():
                 with ui.column().classes(panel_classes):
-                    Form().render()
+                    Form(page).render()
 
 
 if __name__ in {"__main__", "__mp_main__"}:
     class Page(): pass
     page = Page()
-    ui.run(port=80, title="TopSpin", favicon="data/paddle.png")
+    page.refresh_charts = refresh_charts
+    ui.run(port=8100, title="TopSpin", favicon="data/paddle.png")

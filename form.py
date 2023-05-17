@@ -4,7 +4,6 @@ from player import player_names
 from time import time
 from analytics import db
 from datetime import datetime
-from server import refresh_charts
 
 def get_lambda(y):
     return lambda x: x == y
@@ -80,7 +79,7 @@ class TeamForm:
             return "Score must be within range 0<x<100"
         return None
 
-class FFAForm():
+class FFAForm:
 
     def __init__(self, game) -> None:
         self.game = game
@@ -123,8 +122,9 @@ class FFAForm():
 class Form:
     SUBMISSION_RATE_LIMIT = 5 # How often people can submit data
 
-    def __init__(self) -> None:
+    def __init__(self, page) -> None:
         self.last_submission = 0
+        self.page = page
 
     def errors(self):
         game = get_game(self.game_dropdown.value)
@@ -189,7 +189,7 @@ class Form:
         self.last_submission = time()
         ui.notify('Submitted.')
         print(f'Submit {state}')
-        refresh_charts()
+        self.page.refresh_charts()
 
     def on_game_changed(self):
         pass
