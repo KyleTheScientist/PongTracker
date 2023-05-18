@@ -71,4 +71,4 @@ if __name__ in {"__main__", "__mp_main__"}:
     class Page(): pass
     page = Page()
     page.refresh_charts = refresh_charts
-    ui.run(port=8100, title="TopSpin", favicon="data/paddle.png")
+    ui.run(port=6969, title="TopSpin", favicon="data/paddle.png")
