@@ -199,7 +199,7 @@ class Player():
         for player in players:
             if player == self: continue
             self.teammate_ranking[player.name] = self.wins_with[player.name] - self.losses_with[player.name]
-            self.opponent_ranking[player.name] = self.losses_with[player.name] - self.wins_with[player.name]
+            self.opponent_ranking[player.name] = self.wins_against[player.name] - self.losses_against[player.name]
 
         self.wins_with = sorted_by_value(self.wins_with)
         self.wins_against = sorted_by_value(self.wins_against)
