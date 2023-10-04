@@ -12,17 +12,39 @@ from game import games, team_games, ffa_games
 from time import time
 from form import Form
 
+'classes',
+'client',
+'default_slot',
+'id',
+'options',
+'parent_slot',
+'props',
+'slots',
+'style',
+'tag',
+'tooltip',
+'update',
+'visible'
+
+
+
 def refresh_charts():
     '''
     Refreshes the data in all the charts, tables, and player stat cards.
     '''
-
-    for chart, update_method in page.charts:
-        chart.options['series'] = update_method()
-        chart.update()
-
     for player in players:
         player.refresh()
+
+    # for chart, update_func in page.charts:
+    #     before = (chart.options['series'])
+    #     chart.options['series'], chart.options['xAxis']['categories'] = update_func()
+    #     after = (chart.options['series'])
+
+    #     if before != after:
+    #         print(before, ('-' * 100) + '\n', after, '=' * 100)
+
+    for chart, update_func in page.charts:
+        chart.update()
 
     for i, log in enumerate(page.logs):
         log.options['rowData'] = analytics.db.table(games[i].name).all()
@@ -55,7 +77,7 @@ def main_page():
                 ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Players'):
             with ui.card():
-                page.logs = analytics.stats()
+                page.charts += analytics.stats()
                 ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Logs'):
             with ui.card():

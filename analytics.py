@@ -7,56 +7,108 @@ from game import games, team_games
 from player import players, player_names
 from tinydb import TinyDB
 from nicegui import ui
-from utils import ratio_safe
+from utils import ratio_safe, CallLater
 import os
 
 # Load a reference to the database
-
 db = TinyDB(f'{os.path.dirname(os.path.abspath(__file__))}/data/database.json')
+
+def get_teammate_series(player):
+    '''
+    Formats the teammate data so it can be rendered by ui.chart()
+    '''
+    participants = [p for p in players if p != player and player.games_with[p.name] > 0]
+    series = [
+        {
+            'name': 'Wins With', 'index': 2, 'color': '#2a9d8f', 'data': [
+                player.wins_with[teammate.name] for teammate in participants
+            ]
+        },
+        {
+            'name': 'Losses With', 'index': 1, 'color': '#d40427', 'data': [
+                player.losses_with[teammate.name] for teammate in participants
+            ]
+        },
+    ]
+    return series, [p.name for p in participants]
+
+def get_opponent_series(player):
+    '''
+    Formats the teammate data so it can be rendered by ui.chart()
+    '''
+    participants = [p for p in players if p != player and player.games_against[p.name] > 0]
+    series = [
+        {
+            'name': 'Win Against', 'index': 2, 'color': '#2a9d8f', 'data': [
+                player.wins_against[opponent.name] for opponent in participants
+            ]
+        },
+        {
+            'name': 'Losses Against', 'index': 1, 'color': '#d40427', 'data': [
+                player.losses_against[opponent.name] for opponent in participants
+            ]
+        },
+    ]
+    return series, [p.name for p in participants]
 
 def get_win_rate_series():
     '''
     Formats the win rate data so it can be rendered by ui.chart()
     '''
-    series = []
-    for game in games:
-        data = []
-        for player in players:
-            per_game_stats = player.games[game.name]
-            if per_game_stats['matches'] == 0:
-                data.append(0)
-            else:
-                data.append((per_game_stats['wins'] / per_game_stats['matches']) * 100)
-        series.append({'name': game.name, 'data': data})
-    return series
-
-
-class StatSeriesGenerator():
-    def __getattribute__(self, name):
-        data = []
-        for player in players:
-             data.append([player.name, getattr(player, name)])
-        return {'name': name.replace('_', ' ').capitalize(), 'data': data}
+    participants = [player for player in players if player.matches > 0]
+    series = [
+        {
+            'name': game.name,
+            'index': game.index,
+            'color': game.color + '99',
+            'pointPadding': game.index / 10,
+            'data': [
+                ratio_safe(player.games[game.name]['wins'], player.games[game.name]['matches'], 50, True) \
+                    for player in participants
+            ]
+        } for game in games
+    ]
+    return series, [p.name for p in participants]
 
 def get_win_loss_series():
     '''
     Formats the win/loss data so it can be rendered by ui.chart()
     '''
-    generator = StatSeriesGenerator()
-    return [generator.wins, generator.losses]
+    participants = [player for player in players if player.matches > 0]
+    series = [
+        {
+            'name': 'Wins',
+            'index': 1,
+            'color': '#2a9d8f',
+            'data': [player.wins for player in participants]
+        },
+        {
+            'name': 'Losses',
+            'index': 0,
+            'color': '#e76f51',
+            'data': [player.losses for player in participants]
+        },
+    ]
+    return series, [p.name for p in participants]
 
 def get_ppg_series():
     '''
     Formats the win/loss data so it can be rendered by ui.chart()
     '''
-    series = []
-    for game in team_games:
-        data = []
-        for player in players:
-            per_game_stats = player.games[game.name]
-            data.append(ratio_safe(per_game_stats['points'], per_game_stats['matches']))
-        series.append({'name': game.name, 'data': data})
-    return series
+    participants = [player for player in players if player.matches > 0]
+    series = [
+        {
+            'name': game.name,
+            'index': -game.index,
+            'color': game.color + '99',
+            'pointPadding': (len(games) - game.index) / 10,
+            'data': [
+                ratio_safe(player.games[game.name]['points'], player.games[game.name]['matches'], 5) \
+                    for player in participants
+            ]
+        } for game in games if not game.ffa
+    ]
+    return series, [p.name for p in participants]
 
 def get_perfect_series():
     '''
@@ -72,84 +124,161 @@ def render_charts():
     Renders the charts (win rate/win losses) and a dropdown to switch between them.
     Returns a list of `ui.chart`'s and their associated update methods as tuples.
     '''
-    charts = []
     chart_select = ui.select(
         ['Win Rate', 'Wins/Losses', 'Points Per Game'],
         label='Graph',
     ).classes('w-full items-center text-xl')
+
     # Win rates per game
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Win Rate')).classes('w-full'):
+        series, participants = get_win_rate_series()
         win_rates = ui.chart(
         {
             'title': {'text': 'Win Rates'},
-            'chart': {'type': 'bar', 'height': '1000px'},
+            'chart': {'type': 'column', 'height': '1000px', 'maxPadding': 0, 'minPadding': 0},
             'plotOptions': {
                 'series': {
-                    'pointWidth': 10,
-                    'centerInCategory': True
+                    'threshold': 50
                 },
+                'column': {
+                    'grouping': False,
+                    'shadow': 'False'
+                }
             },
-            'xAxis': {'categories': player_names},
-            'yAxis': {'title': False, 'allowDecimals': True},
-            'series': get_win_rate_series(),
+            'xAxis': {'categories': participants},
+            'yAxis': {
+                'title': False,
+                'allowDecimals': True,
+            },
+            'series': series,
         }
     ).classes('w-full h-full')
 
     # Overall wins/losses
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Wins/Losses')).classes('w-full'):
+        series, participants = get_win_loss_series()
         win_loss = ui.chart(
         {
             'title': {'text': 'Overall Wins/Losses'},
             'chart': {'type': 'bar', 'height': '660px'},
             'plotOptions': {
                 'series': {
-                    'pointWidth': 10,
-                    'centerInCategory': True,
+                    'stacking': 'normal',
+                    'dataLabels': {
+                        'enabled': True,
+                        'style': {
+                            'textOutline': {
+                                'width': 0
+                            },
+                            'color': 'white'
+                        }
+                    }
                 },
             },
-            'xAxis': {'categories': player_names},
+            'xAxis': {'categories': participants},
             'yAxis': {'title': False, 'allowDecimals': False},
-            'series': get_win_loss_series(),
+            'series': series,
         }
     ).classes('w-full h-full')
 
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Points Per Game')).classes('w-full'):
+        series, participants = get_ppg_series()
         ppg = ui.chart(
         {
             'title': {'text': 'Points Per Game'},
-            'chart': {'type': 'bar', 'height': '800px'},
+            'chart': {'type': 'column'},
             'plotOptions': {
                 'series': {
-                    'pointWidth': 8,
-                    'pointPadding': .25,
-                    'centerInCategory': True,
+                    'threshold': 5
                 },
+                'column': {
+                    'grouping': False,
+                    'shadow': 'False'
+                }
             },
-            'xAxis': {'categories': player_names},
-            'yAxis': {'title': False, 'allowDecimals': True},
-            'series': get_ppg_series(),
+            'xAxis': {
+                'categories': participants
+            },
+            'yAxis': {
+                'title': False, 'allowDecimals': True,
+            },
+            'series': series,
         }
     ).classes('w-full h-full')
     return [
-        (win_rates, get_win_rate_series),
-        (win_loss, get_win_loss_series),
-        (ppg, get_ppg_series)
+        (win_rates, CallLater(get_win_rate_series)),
+        (win_loss, CallLater(get_win_loss_series)),
+        (ppg, CallLater(get_ppg_series))
     ]
 
-def perfects():
+def render_player_charts(player):
     '''
-    Renders the perfect game chart
+    Renders the charts (win rate/win losses) and a dropdown to switch between them.
+    Returns a list of `ui.chart`'s and their associated update methods as tuples.
     '''
-    return ui.chart(
+    chart_select = ui.select(
+        ['Teammates', 'Opponents'],
+        label='Graph',
+    ).classes('w-full items-center text-xl')
+
+    # Win rates per game
+    with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Teammates')).classes('w-full'):
+        series, participants = get_teammate_series(player)
+        teammates = ui.chart(
         {
-            'title': {'text': 'Perfects'},
-            'chart': {'type': 'bar'},
-            'xAxis': {'categories': player_names},
-            'yAxis': {'title': False, 'allowDecimals': False},
-            'series': get_perfect_series(),
+            'title': {'text': 'Teammates'},
+            'chart': {'type': 'bar', 'height': '800px'},
+            'plotOptions': {
+                'series': {
+                    'stacking': 'normal',
+                    'dataLabels': {
+                        'enabled': True,
+                        'style': {
+                            'textOutline': {
+                                'width': 0
+                            },
+                            'color': 'white'
+                        }
+                    }
+                },
+            },
+            'xAxis': {'categories': participants},
+            'yAxis': {'title': False, 'allowDecimals': True},
+            'series': series,
         }
     ).classes('w-full h-full')
 
+    # Overall wins/losses
+    with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Opponents')).classes('w-full'):
+        series, participants = get_opponent_series(player)
+        opponents = ui.chart(
+        {
+            'title': {'text': 'Opponents'},
+            'chart': {'type': 'bar', 'height': '800px'},
+            'plotOptions': {
+                'series': {
+                    'stacking': 'normal',
+                    'dataLabels': {
+                        'enabled': True,
+                        'style': {
+                            'textOutline': {
+                                'width': 0
+                            },
+                            'color': 'white'
+                        }
+                    }
+                },
+            },
+            'xAxis': {'categories': participants},
+            'yAxis': {'title': False, 'allowDecimals': False},
+            'series': series,
+        }
+    ).classes('w-full h-full')
+
+    return [
+        (teammates, CallLater(get_teammate_series, player)),
+        (opponents, CallLater(get_opponent_series, player)),
+    ]
 
 # HACK The lambda functions weirdly cross-contaminate unless defined
 # in a separate scope
@@ -219,6 +348,8 @@ def stats():
     Renders the stats page, including a player dropdown menu that
     toggles the stat cards for each player.
     '''
+
+    charts = []
     with ui.column().classes('w-full gap-5'):
         # Render player dropdown
         player_select = ui.select(
@@ -257,5 +388,7 @@ def stats():
                 # Lunches
                 with ui.row().classes('w-full'):
                     stat_card('star', 'Lunches', player, 'perfects')
+                charts += render_player_charts(player)
+    return charts
 
 

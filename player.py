@@ -62,8 +62,10 @@ class Player():
         self.server_wins = 0
         self.receiver_wins = 0
         self.matches_per_side = [{'wins': 0, 'losses': 0, 'matches': 0}, {'wins': 0, 'losses': 0, 'matches': 0}]
+        self.games_with = {p: 0 for p in player_names if p != self.name}
         self.wins_with = {p: 0 for p in player_names if p != self.name}
         self.losses_with = {p: 0 for p in player_names if p != self.name}
+        self.games_against = {p: 0 for p in player_names if p != self.name}
         self.wins_against = {p: 0 for p in player_names if p != self.name}
         self.losses_against = {p: 0 for p in player_names if p != self.name}
         self.teammate_ranking = {p: 0 for p in player_names if p != self.name}
@@ -163,8 +165,10 @@ class Player():
                     for teammate in match['team1']:
                         if teammate != self.name:
                             self.wins_with[teammate] += 1
+                            self.games_with[teammate] += 1
                     for opponent in match['team2']:
                         self.wins_against[opponent] += 1
+                        self.games_against[opponent] += 1
 
                 # Player lost
                 if self.name in match['team2']:
@@ -175,8 +179,10 @@ class Player():
                     for teammate in match['team2']:
                         if teammate != self.name:
                             self.losses_with[teammate] += 1
+                            self.games_with[teammate] += 1
                     for opponent in match['team1']:
                         self.losses_against[opponent] += 1
+                        self.games_against[opponent] += 1
 
                 # Preparing some strings
                 category =  'wins'   if team == 'team1' else 'losses'
@@ -207,11 +213,15 @@ class Player():
         self.losses_against = sorted_by_value(self.losses_against)
         self.teammate_ranking = sorted_by_value(self.teammate_ranking)
         self.opponent_ranking = sorted_by_value(self.opponent_ranking)
-        self.best_mate = list(self.teammate_ranking.keys())[-1]
-        self.worst_mate = list(self.teammate_ranking.keys())[0]
-        self.nemesis = list(self.opponent_ranking.keys())[0]
-        self.antinemesis = list(self.opponent_ranking.keys())[-1]
 
+        ranked_played_with = [p for p in self.teammate_ranking.keys() if self.games_with[p] > 0]
+        ranked_played_against = [p for p in self.opponent_ranking.keys() if self.games_with[p] > 0]
+        self.best_mate = ranked_played_with[-1] if len(ranked_played_with) > 0 else None
+        self.worst_mate = ranked_played_with[0] if len(ranked_played_with) > 0 else None
+        self.nemesis = ranked_played_against[0] if len(ranked_played_against) > 0 else None
+        self.antinemesis = ranked_played_against[-1] if len(ranked_played_against) > 0 else None
 
+    def __str__(self) -> str:
+        return self.name
 # Define players
 players = [Player(name) for name in player_names]
