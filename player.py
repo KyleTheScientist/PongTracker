@@ -117,24 +117,28 @@ class Player():
             return f'{singles:.2f}/{doubles:.2f}/{triples:.2f}'
 
         if name == 'best_mate_str':
-            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
+            if  not self.best_mate or self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.best_mate} ({self.wins_with[self.best_mate]} : {self.losses_with[self.best_mate]})'
+            percent = int(ratio_safe(self.wins_with[self.best_mate], self.games_with[self.best_mate], percent=True))
+            return f'{self.best_mate} | {percent}% | ({self.wins_with[self.best_mate]} : {self.losses_with[self.best_mate]})'
 
         if name == 'worst_mate_str':
-            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
+            if not self.worst_mate or self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.worst_mate} ({self.wins_with[self.worst_mate]} : {self.losses_with[self.worst_mate]})'
+            percent = int(ratio_safe(self.wins_with[self.worst_mate], self.games_with[self.worst_mate], percent=True))
+            return f'{self.worst_mate} | {percent}% | ({self.wins_with[self.worst_mate]} : {self.losses_with[self.worst_mate]})'
 
         if name == 'nemesis_str':
-            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
+            if not self.nemesis or self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.nemesis} ({self.wins_against[self.nemesis]} : {self.losses_against[self.nemesis]})'
+            percent = int(ratio_safe(self.wins_against[self.nemesis], self.games_against[self.nemesis], percent=True))
+            return f'{self.nemesis} | {percent}% | ({self.wins_against[self.nemesis]} : {self.losses_against[self.nemesis]})'
 
         if name == 'antinemesis_str':
-            if self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
+            if not self.antinemesis or self.games['Doubles']['matches'] + self.games['Triples']['matches'] == 0:
                 return None
-            return f'{self.antinemesis} ({self.wins_against[self.antinemesis]} : {self.losses_against[self.antinemesis]})'
+            percent = int(ratio_safe(self.wins_against[self.antinemesis], self.games_against[self.antinemesis], percent=True))
+            return f'{self.antinemesis} | {percent}% | ({self.wins_against[self.antinemesis]} : {self.losses_against[self.antinemesis]})'
 
         return super(Player, self).__getattribute__(name)
 
@@ -204,8 +208,14 @@ class Player():
 
         for player in players:
             if player == self: continue
-            self.teammate_ranking[player.name] = self.wins_with[player.name] - self.losses_with[player.name]
-            self.opponent_ranking[player.name] = self.wins_against[player.name] - self.losses_against[player.name]
+            if self.games_with[player.name] < 10:
+                del self.teammate_ranking[player.name]
+            else:
+                self.teammate_ranking[player.name] = ratio_safe(self.wins_with[player.name], self.games_with[player.name])
+            if self.games_against[player.name] < 10:
+                del self.opponent_ranking[player.name]
+            else:
+                self.opponent_ranking[player.name] = ratio_safe(self.wins_against[player.name], self.games_against[player.name])
 
         self.wins_with = sorted_by_value(self.wins_with)
         self.wins_against = sorted_by_value(self.wins_against)
