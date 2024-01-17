@@ -323,7 +323,7 @@ def logs():
     return grids
 
 # Some style definitions
-card_classes = 'w-full gap-1 place-content-center bg-primary border-white border-4 rounded-lg'
+card_classes = 'w-full col-span-1 gap-1 place-content-center bg-primary border-white border-4 rounded-lg'
 icon_classes = 'text-2xl text-white fg-white padding p-1'
 label_classes = 'text-2xl font-bold text-white'
 value_classes = 'text-2xl font-semibold	w-full bg-accent padding p-1 text-center text-white border-white border-4 rounded-lg'
@@ -360,33 +360,34 @@ def stats():
         for player in players:
             with ui.column().bind_visibility_from(player_select, 'value', backward=player_lambda(player.name)).classes('w-full'):
                 # Wins/Losses
-                with ui.row().classes('w-full'):
+                row_classes = 'w-full grid-flow-col'
+                with ui.grid().classes(row_classes):
                     stat_card('arrow_upward', 'Wins', player, 'wins')
                     stat_card('arrow_downward', 'Losses', player, 'losses')
                 # Games/Win Rate
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     stat_card('tag', 'Games', player, 'matches')
                     stat_card('timelapse', 'Win Rate', player, 'win_rate')
                 # Points per game
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     stat_card('calculate', 'Points Per Game (1s/2s/3s)', player, 'points_per_game')
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     stat_card('calculate', 'Point Diff. Per Game (1s/2s/3s)', player, 'difference_per_game')
                 # Best Position
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     stat_card('group', 'Best Position', player, 'best_position')
                 # Best/Worst Teammate
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     best_mate, worst_mate = player.best_mate, player.worst_mate
                     stat_card('handshake', 'Best Teammate', player, 'best_mate_str')
                     stat_card('handshake', 'Worst Teammate', player, 'worst_mate_str')
                 # Nemesis/Anti-nemesis
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     nemesis, antinemesis = player.nemesis, player.antinemesis
                     stat_card('bolt', 'Nemesis', player, 'nemesis_str')
                     stat_card('emoji_events', 'Anti-Nemesis', player, 'antinemesis_str')
                 # Lunches
-                with ui.row().classes('w-full'):
+                with ui.grid().classes(row_classes):
                     stat_card('star', 'Lunches', player, 'perfects')
                 charts += render_player_charts(player)
     return charts

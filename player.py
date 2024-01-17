@@ -4,24 +4,23 @@ from tinydb import Query
 from utils import ratio_safe
 
 # The list of players.
-# TODO import these from a file or something
 player_names = [
     'Adams',
+    'Alonzo',
+    'Boris',
     'Bret',
+    'Cinu',
+    'Danny',
     'Huseyin',
     'Jacob',
-    'Zack',
-    'Kyle',
-    'Danny',
-    'Shrey',
-    'Shammi',
-    'Alonzo',
-    'Perry',
-    'Cinu',
-    'Boris',
-    'Grayson',
     'Kate',
-    'Yan'
+    'Kyle',
+    'Moseley',
+    'Perry',
+    'Shammi',
+    'Shrey',
+    'Yan',
+    'Zack'
 ]
 player_names.sort()
 
