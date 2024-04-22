@@ -10,7 +10,6 @@ player_names = [
     'Boris',
     'Bret',
     'Cinu',
-    'Danny',
     'Huseyin',
     'Jacob',
     'Kate',

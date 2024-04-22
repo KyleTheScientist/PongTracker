@@ -1,7 +1,7 @@
 import json
 import matplotlib.pyplot as plt
 
-with open('data/database.json', 'r') as f:
+with open('data/season-7.6.json', 'r') as f:
     data = json.load(f)['Doubles']
 
 win_rates = {}
@@ -48,6 +48,7 @@ for player in win_rates:
         dates.append(date)
         player_rates.append(win_rate)
     plt.plot(dates, player_rates, label=player)
+    plt.text(dates[-1], player_rates[-1], f'  {player}: {player_rates[-1]}')
 
 # Add labels and legend to the plot
 plt.xlabel("Date")
