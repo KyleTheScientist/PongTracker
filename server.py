@@ -2,6 +2,9 @@
 This is the main file. Run this to start the server.
 '''
 
+import tomllib
+import sys
+
 import analytics
 
 from collections import namedtuple
@@ -26,6 +29,12 @@ from form import Form
 'update',
 'visible'
 
+if len(sys.argv) != 2:
+    print("Expected single arg for config TOML file")
+    sys.exit(1)
+
+with open(sys.argv[1], "rb") as config_file:
+    config = tomllib.load(config_file)
 
 
 def refresh_charts():
@@ -50,7 +59,7 @@ def refresh_charts():
         log.options['rowData'] = analytics.db.table(games[i].name).all()
         log.update()
 
-@ui.page('/')
+@ui.page(config.get("root_path") or "/")
 def main_page():
     '''
     Renders the main page. This is the page that everyone is first
@@ -90,7 +99,15 @@ def main_page():
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    analytics.load_db(config.get("db_file") or "data/database.json")
+
     class Page(): pass
     page = Page()
     page.refresh_charts = refresh_charts
-    ui.run(port=6969, title="TopSpin", favicon="data/paddle.png")
+
+    ui.run(
+        title="TopSpin",
+        favicon="data/paddle.png",
+        port=int(config.get("port") or 6969),
+        reload=config.get("reload") or True,
+    )

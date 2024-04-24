@@ -1,0 +1,4 @@
+db_file = "data/database.json"
+port = 6969
+reload = true
+root_path = "/topspin"

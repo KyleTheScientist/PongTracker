@@ -10,8 +10,12 @@ from nicegui import ui
 from utils import ratio_safe, CallLater
 import os
 
+db = None
+
 # Load a reference to the database
-db = TinyDB(f'{os.path.dirname(os.path.abspath(__file__))}/data/database.json')
+def load_db(path):
+    global db
+    db = TinyDB(path)
 
 def get_teammate_series(player):
     '''
@@ -298,6 +302,8 @@ def logs():
     Renders the match history for each game into a table and renders
     the game dropdown that toggles them.
     '''
+    global db
+
     grids = []
     # Render game dropdown
     game_select = ui.select(
