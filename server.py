@@ -9,7 +9,7 @@ import sys
 import analytics
 
 from collections import namedtuple
-from nicegui import ui
+from nicegui import ui, app
 
 from player import players, player_names
 from game import games, team_games, ffa_games
@@ -64,7 +64,7 @@ def refresh_charts():
         log.options['rowData'] = analytics.db.table(games[i].name).all()
         log.update()
 
-@ui.page(config.get("root_path") or "/")
+@ui.page("/")
 def main_page():
     '''
     Renders the main page. This is the page that everyone is first
@@ -110,9 +110,12 @@ if __name__ in {"__main__", "__mp_main__"}:
     page = Page()
     page.refresh_charts = refresh_charts
 
+    app.root_path = config.get("root_path") or "/"
+
     ui.run(
         title="TopSpin",
         favicon="data/paddle.png",
         port=int(config.get("port") or 6969),
         reload=bool(config.get("reload")) or True,
+        uvicorn_reload_includes="*.py,*.cfg",
     )
