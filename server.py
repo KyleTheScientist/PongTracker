@@ -2,10 +2,14 @@
 This is the main file. Run this to start the server.
 '''
 
+import configparser
+import os
+import sys
+
 import analytics
 
 from collections import namedtuple
-from nicegui import ui
+from nicegui import ui, app
 
 from player import players, player_names
 from game import games, team_games, ffa_games
@@ -26,7 +30,17 @@ from form import Form
 'update',
 'visible'
 
+if len(sys.argv) != 2:
+    print("Expected single arg for config file")
+    sys.exit(1)
 
+if not os.path.isfile(sys.argv[1]):
+    print("Not a file:", sys.argv[1])
+    sys.exit(1)
+
+config_parser = configparser.ConfigParser()
+config_parser.read(sys.argv[1])
+config = config_parser['topspin']
 
 def refresh_charts():
     '''
@@ -50,7 +64,7 @@ def refresh_charts():
         log.options['rowData'] = analytics.db.table(games[i].name).all()
         log.update()
 
-@ui.page('/')
+@ui.page("/")
 def main_page():
     '''
     Renders the main page. This is the page that everyone is first
@@ -72,25 +86,36 @@ def main_page():
     # refresh_btn_classes = 'mt-10 bg-blue-400'
     with ui.tab_panels(tabs, value='Graphs').classes('w-full'):
         with ui.tab_panel('Graphs'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.charts = analytics.render_charts()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Players'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.charts += analytics.stats()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Logs'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.logs = analytics.logs()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Add'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 with ui.column().classes(panel_classes):
                     Form(page).render()
 
 
 if __name__ in {"__main__", "__mp_main__"}:
+    analytics.load_db(config.get("db_file") or "data/database.json")
+
     class Page(): pass
     page = Page()
     page.refresh_charts = refresh_charts
-    ui.run(port=6969, title="TopSpin", favicon="data/paddle.png")
+
+    app.root_path = config.get("root_path") or "/"
+
+    ui.run(
+        title="TopSpin",
+        favicon="data/paddle.png",
+        port=int(config.get("port") or 6969),
+        reload=bool(config.get("reload")) or True,
+        uvicorn_reload_includes="*.py,*.cfg",
+    )

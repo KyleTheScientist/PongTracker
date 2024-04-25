@@ -10,12 +10,16 @@ from nicegui import ui
 from utils import ratio_safe, CallLater
 import os
 
+db = None
+
 # Load a reference to the database
-db = TinyDB(f'{os.path.dirname(os.path.abspath(__file__))}/data/database.json')
+def load_db(path):
+    global db
+    db = TinyDB(path)
 
 def get_teammate_series(player):
     '''
-    Formats the teammate data so it can be rendered by ui.chart()
+    Formats the teammate data so it can be rendered by ui.highchart()
     '''
     participants = [p for p in players if p != player and player.games_with[p.name] > 0]
     series = [
@@ -34,7 +38,7 @@ def get_teammate_series(player):
 
 def get_opponent_series(player):
     '''
-    Formats the teammate data so it can be rendered by ui.chart()
+    Formats the teammate data so it can be rendered by ui.highchart()
     '''
     participants = [p for p in players if p != player and player.games_against[p.name] > 0]
     series = [
@@ -53,7 +57,7 @@ def get_opponent_series(player):
 
 def get_win_rate_series():
     '''
-    Formats the win rate data so it can be rendered by ui.chart()
+    Formats the win rate data so it can be rendered by ui.highchart()
     '''
     participants = [player for player in players if player.matches > 0]
     series = [
@@ -72,7 +76,7 @@ def get_win_rate_series():
 
 def get_win_loss_series():
     '''
-    Formats the win/loss data so it can be rendered by ui.chart()
+    Formats the win/loss data so it can be rendered by ui.highchart()
     '''
     participants = [player for player in players if player.matches > 0]
     series = [
@@ -93,7 +97,7 @@ def get_win_loss_series():
 
 def get_ppg_series():
     '''
-    Formats the win/loss data so it can be rendered by ui.chart()
+    Formats the win/loss data so it can be rendered by ui.highchart()
     '''
     participants = [player for player in players if player.matches > 0]
     series = [
@@ -112,7 +116,7 @@ def get_ppg_series():
 
 def get_perfect_series():
     '''
-    Formats the perfect game data so it can be rendered by ui.chart()
+    Formats the perfect game data so it can be rendered by ui.highchart()
     '''
     data = []
     for player in players:
@@ -122,7 +126,7 @@ def get_perfect_series():
 def render_charts():
     '''
     Renders the charts (win rate/win losses) and a dropdown to switch between them.
-    Returns a list of `ui.chart`'s and their associated update methods as tuples.
+    Returns a list of `ui.highchart`'s and their associated update methods as tuples.
     '''
     chart_select = ui.select(
         ['Win Rate', 'Wins/Losses', 'Points Per Game'],
@@ -132,7 +136,7 @@ def render_charts():
     # Win rates per game
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Win Rate')).classes('w-full'):
         series, participants = get_win_rate_series()
-        win_rates = ui.chart(
+        win_rates = ui.highchart(
         {
             'title': {'text': 'Win Rates'},
             'chart': {'type': 'column', 'height': '1000px', 'maxPadding': 0, 'minPadding': 0},
@@ -157,7 +161,7 @@ def render_charts():
     # Overall wins/losses
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Wins/Losses')).classes('w-full'):
         series, participants = get_win_loss_series()
-        win_loss = ui.chart(
+        win_loss = ui.highchart(
         {
             'title': {'text': 'Overall Wins/Losses'},
             'chart': {'type': 'bar', 'height': '660px'},
@@ -183,7 +187,7 @@ def render_charts():
 
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Points Per Game')).classes('w-full'):
         series, participants = get_ppg_series()
-        ppg = ui.chart(
+        ppg = ui.highchart(
         {
             'title': {'text': 'Points Per Game'},
             'chart': {'type': 'column'},
@@ -214,7 +218,7 @@ def render_charts():
 def render_player_charts(player):
     '''
     Renders the charts (win rate/win losses) and a dropdown to switch between them.
-    Returns a list of `ui.chart`'s and their associated update methods as tuples.
+    Returns a list of `ui.highchart`'s and their associated update methods as tuples.
     '''
     chart_select = ui.select(
         ['Teammates', 'Opponents'],
@@ -224,7 +228,7 @@ def render_player_charts(player):
     # Win rates per game
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Teammates')).classes('w-full'):
         series, participants = get_teammate_series(player)
-        teammates = ui.chart(
+        teammates = ui.highchart(
         {
             'title': {'text': 'Teammates'},
             'chart': {'type': 'bar', 'height': '800px'},
@@ -251,7 +255,7 @@ def render_player_charts(player):
     # Overall wins/losses
     with ui.column().bind_visibility_from(chart_select, 'value', backward=chart_lambda('Opponents')).classes('w-full'):
         series, participants = get_opponent_series(player)
-        opponents = ui.chart(
+        opponents = ui.highchart(
         {
             'title': {'text': 'Opponents'},
             'chart': {'type': 'bar', 'height': '800px'},
@@ -298,6 +302,8 @@ def logs():
     Renders the match history for each game into a table and renders
     the game dropdown that toggles them.
     '''
+    global db
+
     grids = []
     # Render game dropdown
     game_select = ui.select(
