@@ -2,7 +2,7 @@ from nicegui import ui
 from game import games, team_games, ffa_games, Game, get_game
 from player import player_names
 from time import time
-from analytics import db
+import analytics
 from datetime import datetime
 
 def get_lambda(y):
@@ -183,7 +183,7 @@ class Form:
                 color='orange'
             )
             return
-        table = db.table(self.game_dropdown.value)
+        table = analytics.db.table(self.game_dropdown.value)
         state = self()
         table.insert(state)
         self.last_submission = time()
