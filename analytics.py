@@ -14,7 +14,6 @@ db = None
 
 # Load a reference to the database
 def load_db(path):
-    global db
     db = TinyDB(path)
 
 def get_teammate_series(player):
@@ -302,7 +301,6 @@ def logs():
     Renders the match history for each game into a table and renders
     the game dropdown that toggles them.
     '''
-    global db
 
     grids = []
     # Render game dropdown
