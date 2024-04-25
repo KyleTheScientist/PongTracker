@@ -2,7 +2,8 @@
 This is the main file. Run this to start the server.
 '''
 
-import tomllib
+import configparser
+import os
 import sys
 
 import analytics
@@ -30,12 +31,16 @@ from form import Form
 'visible'
 
 if len(sys.argv) != 2:
-    print("Expected single arg for config TOML file")
+    print("Expected single arg for config file")
     sys.exit(1)
 
-with open(sys.argv[1], "rb") as config_file:
-    config = tomllib.load(config_file)
+if not os.path.isfile(sys.argv[1]):
+    print("Not a file:", sys.argv[1])
+    sys.exit(1)
 
+config_parser = configparser.ConfigParser()
+config_parser.read(sys.argv[1])
+config = config_parser['topspin']
 
 def refresh_charts():
     '''
@@ -109,5 +114,5 @@ if __name__ in {"__main__", "__mp_main__"}:
         title="TopSpin",
         favicon="data/paddle.png",
         port=int(config.get("port") or 6969),
-        reload=config.get("reload") or True,
+        reload=bool(config.get("reload")) or True,
     )
