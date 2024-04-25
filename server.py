@@ -86,19 +86,19 @@ def main_page():
     # refresh_btn_classes = 'mt-10 bg-blue-400'
     with ui.tab_panels(tabs, value='Graphs').classes('w-full'):
         with ui.tab_panel('Graphs'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.charts = analytics.render_charts()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Players'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.charts += analytics.stats()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Logs'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 page.logs = analytics.logs()
                 # ui.button('Refresh', on_click=refresh_charts).classes('w-full').classes(refresh_btn_classes)
         with ui.tab_panel('Add'):
-            with ui.card():
+            with ui.card().classes('w-full'):
                 with ui.column().classes(panel_classes):
                     Form(page).render()
 
